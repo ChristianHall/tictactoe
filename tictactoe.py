@@ -33,7 +33,7 @@ def play_game(difficulty):
         else:
             player = "COMPUTER"
             print("COMPUTER'S TURN")
-            gameboard = computer_turn(gameboard, difficulty)
+            gameboard = computer_turn(gameboard, difficulty, turn)
         if check_winner(gameboard):
             print("winner found")
             break
@@ -64,24 +64,49 @@ def player_turn(gameboard):
     return gameboard
 
 
-def computer_turn(gameboard, difficulty):
+def computer_turn(gameboard, difficulty, turn):
     
+    print("Checking potential wins")
     complete = fill_in_third_blank(gameboard, "O")
     
-    if not complete and "D" in difficulty:
-        # "PROACTIVE"
-        # try to get the 5th square first
-        # block different scenarios, pre-programmed in
-        # if none of the blocking conditions are met, then move on to the next thing
-        pass
+    if not complete and "D" in difficulty and turn == 1:
+        print("Proactive D)")
+        # D is "PROACTIVE" - it tries to disrupt winning strategies preemptively
+        if gameboard[5].isdigit():
+            gameboard[5] = "O"
+            complete = True
+        else:
+            square = randrange(4)
+            if square == 0:
+                gameboard[1] = "O"
+            elif square == 1:
+                gameboard[3] = "O"
+            elif square == 2:
+                gameboard[7] = "O"
+            elif square == 3:
+                gameboard[9] = "O"
+            complete = True
     
     if not complete and "E" not in difficulty:
+        print("Reactive M")
         # M is "REACTIVE" - it tries to stop the player from getting 3 in a row
         complete = fill_in_third_blank(gameboard, "X")
+        
+    if not complete and "D" in difficulty:
+        print("Anticipating D")
+        if gameboard[5] == "O":
+            # tries to anticipate player winning sequences and disrupt them
+            complete = fill_in_difficult_sequences(gameboard, "X")
 
-    if not complete:
-        # E is "INDEPENDENT" - it tries to complete its own 3-in-a-row
-        complete = fill_in_second_blank(gameboard)
+        if not complete:
+            # tries to set up own winning sequences
+            complete = fill_in_difficult_sequences(gameboard, "O")
+            pass 
+
+    # if not complete:
+    #     print("Independent E")
+    #     # E is "INDEPENDENT" - it tries to complete its own 3-in-a-row
+    #     complete = fill_in_second_blank(gameboard)
     
     while not complete:
         # If none of the above methods are working, it will pick a square at random
@@ -107,8 +132,31 @@ def fill_in_third_blank(gameboard, watch_variable):
                     return True
     return False
 
-def fill_in_second_blank(gameboard):
+
+def fill_in_difficult_sequences(gameboard, watch_variable):
+    difficult_sequences = [[1, 9, 2], [3, 7, 6], [1, 6, 3], [1, 8, 7], [3, 4, 1],[3, 8, 9], [7, 2, 1], [7, 6, 9], [9, 4, 7], [9, 2, 3]]
+    for sequence in difficult_sequences:
+        if gameboard[sequence[0]] == watch_variable and gameboard[sequence[1]] == watch_variable and gameboard[sequence[2]].isdigit():
+            gameboard[sequence[2]] = "O"
+            return True
     return False
+
+
+def fill_in_second_blank(gameboard):
+    winning_sequences = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [1, 4, 7], [2, 5, 8], [3, 6, 9], [1, 5, 9], [3, 5, 7]]
+    for sequence in winning_sequences:
+        if gameboard[sequence[0]] == "O":
+            if gameboard[sequence[1]].isdigit() and gameboard[sequence[2]].isdigit():
+                flip = randrange(2)
+                gameboard[sequence[1]] = "O"
+                gameboard[sequence[1] if flip == 0 else sequence[2]]
+                return True
+    return False
+
+
+def coin_flip(heads, tails):
+    flip = randrange(2)
+    return heads if flip == 0 else tails
 
 
 def check_winner(gameboard):
